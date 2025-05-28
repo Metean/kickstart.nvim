@@ -90,12 +90,6 @@ vim.keymap.set("n", "<C-l>", "<C-w><C-l>", { desc = "Move focus to the right win
 vim.keymap.set("n", "<C-j>", "<C-w><C-j>", { desc = "Move focus to the lower window" })
 vim.keymap.set("n", "<C-k>", "<C-w><C-k>", { desc = "Move focus to the upper window" })
 
--- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
--- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
--- vim.keymap.set("n", "<C-S-l>", "<C-w>L", { desc = "Move window to the right" })
--- vim.keymap.set("n", "<C-S-j>", "<C-w>J", { desc = "Move window to the lower" })
--- vim.keymap.set("n", "<C-S-k>", "<C-w>K", { desc = "Move window to the upper" })
-
 -- [[ Basic Autocommands ]]
 
 -- Highlight when yanking (copying) text
@@ -141,6 +135,7 @@ require("lazy").setup({
 		"folke/which-key.nvim",
 		event = "VimEnter",
 		opts = {
+			preset = "modern",
 			delay = 0,
 			icons = {
 				mappings = vim.g.have_nerd_font,
@@ -245,20 +240,7 @@ require("lazy").setup({
 		end,
 	},
 
-	-- LSP Plugins
-	{
-		-- `lazydev` configures Lua LSP for your Neovim config, runtime and plugins
-		-- used for completion, annotations and signatures of Neovim apis
-		"folke/lazydev.nvim",
-		ft = "lua",
-		opts = {
-			library = {
-				{ path = "${3rd}/luv/library", words = { "vim%.uv" } },
-			},
-		},
-	},
-	{
-		-- Main LSP Configuration
+	{ -- Main LSP Configuration
 		"neovim/nvim-lspconfig",
 		dependencies = {
 			-- Automatically install LSPs and related tools to stdpath for Neovim
@@ -369,10 +351,6 @@ require("lazy").setup({
 						})
 					end
 
-					-- The following code creates a keymap to toggle inlay hints in your
-					-- code, if the language server you are using supports them
-					--
-					-- This may be unwanted, since they displace some of your code
 					if
 						client
 						and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_inlayHint, event.buf)
@@ -385,7 +363,6 @@ require("lazy").setup({
 			})
 
 			-- Diagnostic Config
-			-- See :help vim.diagnostic.Opts
 			vim.diagnostic.config({
 				severity_sort = true,
 				float = { border = "rounded", source = "if_many" },
@@ -413,79 +390,40 @@ require("lazy").setup({
 				},
 			})
 
-			-- LSP servers and clients are able to communicate to each other what features they support.
-			--  By default, Neovim doesn't support everything that is in the LSP specification.
-			--  When you add blink.cmp, luasnip, etc. Neovim now has *more* capabilities.
-			--  So, we create new capabilities with blink.cmp, and then broadcast that to the servers.
 			local capabilities = require("blink.cmp").get_lsp_capabilities()
 
-			-- Enable the following language servers
-			--  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
-			--
-			--  Add any additional override configuration in the following tables. Available keys are:
-			--  - cmd (table): Override the default command used to start the server
-			--  - filetypes (table): Override the default list of associated filetypes for the server
-			--  - capabilities (table): Override fields in capabilities. Can be used to disable certain LSP features.
-			--  - settings (table): Override the default settings passed when initializing the server.
-			--        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
 			local servers = {
-				-- clangd = {},
-				-- gopls = {},
-				-- pyright = {},
-				-- rust_analyzer = {},
-				-- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
-				--
-				-- Some languages (like typescript) have entire language plugins that can be useful:
-				--    https://github.com/pmizio/typescript-tools.nvim
-				--
-				-- But for many setups, the LSP (`ts_ls`) will work just fine
-				-- ts_ls = {},
-				--
+				-- lua
+				lua_ls = {},
 
-				lua_ls = {
-					-- cmd = { ... },
-					-- filetypes = { ... },
-					-- capabilities = {},
-					settings = {
-						Lua = {
-							completion = {
-								callSnippet = "Replace",
-							},
-							-- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
-							-- diagnostics = { disable = { 'missing-fields' } },
-						},
-					},
-				},
+				-- C / C++
+				clangd = {},
+
+				-- Web: HTML, CSS, JS/TS
+				html = {},
+				cssls = {},
+				ts_ls = {},
+
+				-- .NET
+				omnisharp = {},
+
+				-- Python
+				pyright = {},
+
+				-- os script
+				bashls = {},
+				powershell_es = {},
 			}
 
-			-- Ensure the servers and tools above are installed
-			--
-			-- To check the current status of installed tools and/or manually install
-			-- other tools, you can run
-			--    :Mason
-			--
-			-- You can press `g?` for help in this menu.
-			--
-			-- `mason` had to be setup earlier: to configure its options see the
-			-- `dependencies` table for `nvim-lspconfig` above.
-			--
-			-- You can add other tools here that you want Mason to install
-			-- for you, so that they are available from within Neovim.
-			local ensure_installed = vim.tbl_keys(servers or {})
-			vim.list_extend(ensure_installed, {
-				"stylua", -- Used to format Lua code
-			})
-			require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
+			require("mason-tool-installer").setup({ ensure_installed = servers or {} })
 
 			require("mason-lspconfig").setup({
-				ensure_installed = {}, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
-				automatic_installation = false,
+				ensure_installed = {},
+				automatic_installation = true,
+				automatic_enable = true,
 				handlers = {
 					function(server_name)
 						local server = servers[server_name] or {}
-						-- This handles overriding only values explicitly passed
-						-- by the server configuration above. Useful when disabling
-						-- certain features of an LSP (for example, turning off formatting for ts_ls)
 						server.capabilities = vim.tbl_deep_extend("force", {}, capabilities, server.capabilities or {})
 						require("lspconfig")[server_name].setup(server)
 					end,
@@ -525,12 +463,30 @@ require("lazy").setup({
 				end
 			end,
 			formatters_by_ft = {
+				-- Lua
 				lua = { "stylua" },
-				-- Conform can also run multiple formatters sequentially
-				-- python = { "isort", "black" },
-				--
-				-- You can use 'stop_after_first' to run the first available formatter from the list
-				-- javascript = { "prettierd", "prettier", stop_after_first = true },
+
+				-- C / C++
+				c = { "clang-format" },
+				cpp = { "clang-format" },
+
+				-- Web: HTML, CSS, JavaScript/TypeScript
+				html = { "prettierd", "prettier", stop_after_first = true },
+				css = { "prettierd", "prettier", stop_after_first = true },
+				javascript = { "prettierd", "prettier", stop_after_first = true },
+				typescript = { "prettierd", "prettier", stop_after_first = true },
+
+				-- .NET
+				cs = { "dotnet-format" },
+
+				-- Python
+				python = { "isort", "black" },
+
+				-- Shell
+				sh = { "shfmt" },
+
+				-- PowerShell
+				ps1 = { "powershell-formatter" },
 			},
 		},
 	},
@@ -540,107 +496,38 @@ require("lazy").setup({
 		event = "VimEnter",
 		version = "1.*",
 		dependencies = {
-			-- Snippet Engine
-			{
-				"L3MON4D3/LuaSnip",
-				version = "2.*",
-				build = (function()
-					-- Build Step is needed for regex support in snippets.
-					-- This step is not supported in many windows environments.
-					-- Remove the below condition to re-enable on windows.
-					if vim.fn.has("win32") == 1 or vim.fn.executable("make") == 0 then
-						return
-					end
-					return "make install_jsregexp"
-				end)(),
-				dependencies = {
-					-- `friendly-snippets` contains a variety of premade snippets.
-					--    See the README about individual language/framework/plugin snippets:
-					--    https://github.com/rafamadriz/friendly-snippets
-					-- {
-					--   'rafamadriz/friendly-snippets',
-					--   config = function()
-					--     require('luasnip.loaders.from_vscode').lazy_load()
-					--   end,
-					-- },
-				},
-				opts = {},
-			},
+			-- Neovim API completions
 			"folke/lazydev.nvim",
+			-- Add luasnip for more
 		},
 		--- @module 'blink.cmp'
 		--- @type blink.cmp.Config
 		opts = {
-			keymap = {
-				-- 'default' (recommended) for mappings similar to built-in completions
-				--   <c-y> to accept ([y]es) the completion.
-				--    This will auto-import if your LSP supports it.
-				--    This will expand snippets if the LSP sent a snippet.
-				-- 'super-tab' for tab to accept
-				-- 'enter' for enter to accept
-				-- 'none' for no mappings
-				--
-				-- For an understanding of why the 'default' preset is recommended,
-				-- you will need to read `:help ins-completion`
-				--
-				-- No, but seriously. Please read `:help ins-completion`, it is really good!
-				--
-				-- All presets have the following mappings:
-				-- <tab>/<s-tab>: move to right/left of your snippet expansion
-				-- <c-space>: Open menu or open docs if already open
-				-- <c-n>/<c-p> or <up>/<down>: Select next/previous item
-				-- <c-e>: Hide menu
-				-- <c-k>: Toggle signature help
-				--
-				-- See :h blink-cmp-config-keymap for defining your own keymap
-				preset = "default",
-
-				-- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
-				--    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
-			},
-
-			appearance = {
-				-- 'mono' (default) for 'Nerd Font Mono' or 'normal' for 'Nerd Font'
-				-- Adjusts spacing to ensure icons are aligned
-				nerd_font_variant = "mono",
-			},
-
+			keymap = { preset = "default" },
+			appearance = { nerd_font_variant = "mono" },
 			completion = {
-				-- By default, you may press `<c-space>` to show the documentation.
-				-- Optionally, set `auto_show = true` to show the documentation after a delay.
 				documentation = { auto_show = false, auto_show_delay_ms = 500 },
 			},
 
 			sources = {
-				default = { "lsp", "path", "snippets", "lazydev" },
+				default = { "lsp", "path", "lazydev" },
 				providers = {
 					lazydev = { module = "lazydev.integrations.blink", score_offset = 100 },
 				},
 			},
 
-			snippets = { preset = "luasnip" },
-
-			-- Blink.cmp includes an optional, recommended rust fuzzy matcher,
-			-- which automatically downloads a prebuilt binary when enabled.
-			--
-			-- By default, we use the Lua implementation instead, but you may enable
-			-- the rust implementation via `'prefer_rust_with_warning'`
-			--
-			-- See :h blink-cmp-config-fuzzy for more information
-			fuzzy = { implementation = "lua" },
-
-			-- Shows a signature help window while you type arguments for a function
+			fuzzy = { implementation = "prefer_rust_with_warning" },
 			signature = { enabled = true },
 		},
 	},
 
-	{
+	{ -- Theme
 		"catppuccin/nvim",
 		name = "catppuccin",
 		priority = 1000,
 		config = function()
 			require("catppuccin").setup({
-				flavour = "auto",
+				flavour = "mocha",
 				transparent_background = true,
 
 				integrations = {
@@ -654,18 +541,17 @@ require("lazy").setup({
 						enabled = true,
 					},
 				},
+				highlight_overrides = {
+					all = function(colors)
+						return {
+							LineNr = { fg = colors.overlay2 },
+						}
+					end,
+				},
 			})
 
 			vim.cmd.colorscheme("catppuccin")
 		end,
-	},
-
-	-- Highlight todo, notes, etc in comments
-	{
-		"folke/todo-comments.nvim",
-		event = "VimEnter",
-		dependencies = { "nvim-lua/plenary.nvim" },
-		opts = { signs = false },
 	},
 
 	{ -- Collection of various small independent plugins/modules
@@ -700,9 +586,6 @@ require("lazy").setup({
 			statusline.section_location = function()
 				return "%2l:%-2v"
 			end
-
-			-- ... and there is more!
-			--  Check out: https://github.com/echasnovski/mini.nvim
 		end,
 	},
 	{ -- Highlight, edit, and navigate code
@@ -714,8 +597,14 @@ require("lazy").setup({
 			ensure_installed = {
 				"bash",
 				"c",
-				"diff",
+				"cpp",
+				"c_sharp",
 				"html",
+				"css",
+				"javascript",
+				"typescript",
+				"python",
+				"diff",
 				"lua",
 				"luadoc",
 				"markdown",
@@ -724,42 +613,12 @@ require("lazy").setup({
 				"vim",
 				"vimdoc",
 			},
-			-- Autoinstall languages that are not installed
 			auto_install = true,
 			highlight = {
 				enable = true,
-				-- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
-				--  If you are experiencing weird indenting issues, add the language to
-				--  the list of additional_vim_regex_highlighting and disabled languages for indent.
-				additional_vim_regex_highlighting = { "ruby" },
+				additional_vim_regex_highlighting = {},
 			},
-			indent = { enable = true, disable = { "ruby" } },
-		},
-		-- There are additional nvim-treesitter modules that you can use to interact
-		-- with nvim-treesitter. You should go explore a few and see what interests you:
-		--
-		--    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
-		--    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
-		--    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
-	},
-}, {
-	ui = {
-		-- If you are using a Nerd Font: set icons to an empty table which will use the
-		-- default lazy.nvim defined Nerd Font icons, otherwise define a unicode icons table
-		icons = vim.g.have_nerd_font and {} or {
-			cmd = "⌘",
-			config = "🛠",
-			event = "📅",
-			ft = "📂",
-			init = "⚙",
-			keys = "🗝",
-			plugin = "🔌",
-			runtime = "💻",
-			require = "🌙",
-			source = "📄",
-			start = "🚀",
-			task = "📌",
-			lazy = "💤 ",
+			indent = { enable = true, disable = {} },
 		},
 	},
 })
