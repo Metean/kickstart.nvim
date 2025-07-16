@@ -66,7 +66,7 @@ vim.opt.scrolloff = 10
 -- if performing an operation that would fail due to unsaved changes in the buffer (like `:q`),
 -- instead raise a dialog asking if you wish to save the current file(s)
 -- See `:help 'confirm'`
-vim.opt.confirm = true
+-- vim.opt.confirm = true
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
@@ -78,10 +78,10 @@ vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>")
 vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostic [Q]uickfix list" })
 
 -- TIP: Disable arrow keys in normal mode
--- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
--- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
--- vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
--- vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
+vim.keymap.set("n", "<left>", '<cmd>echo "Use h to move!!"<CR>')
+vim.keymap.set("n", "<right>", '<cmd>echo "Use l to move!!"<CR>')
+vim.keymap.set("n", "<up>", '<cmd>echo "Use k to move!!"<CR>')
+vim.keymap.set("n", "<down>", '<cmd>echo "Use j to move!!"<CR>')
 
 -- Keybinds to make split navigation easier.
 --  Use CTRL+<hjkl> to switch between windows
@@ -245,7 +245,7 @@ require("lazy").setup({
 		dependencies = {
 			-- Automatically install LSPs and related tools to stdpath for Neovim
 			-- Mason must be loaded before its dependents so we need to set it up here.
-			-- NOTE: `opts = {}` is the same as calling `require('mason').setup({})`
+			-- NOTE: opts = {} is the same as calling require('mason').setup({})
 			{ "williamboman/mason.nvim", opts = {} },
 			"williamboman/mason-lspconfig.nvim",
 			"WhoIsSethDaniel/mason-tool-installer.nvim",
@@ -406,6 +406,7 @@ require("lazy").setup({
 
 				-- .NET
 				omnisharp = {},
+				razor = {},
 
 				-- Python
 				pyright = {},
@@ -414,6 +415,8 @@ require("lazy").setup({
 				bashls = {},
 				powershell_es = {},
 			}
+
+			require("lspconfig").razor = { default_config = servers.razor }
 
 			require("mason-tool-installer").setup({ ensure_installed = servers or {} })
 
@@ -487,6 +490,9 @@ require("lazy").setup({
 
 				-- PowerShell
 				ps1 = { "powershell-formatter" },
+
+				-- JSON
+				json = { "prettierd", "prettier", "jq", stop_after_first = true },
 			},
 		},
 	},
